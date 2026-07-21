@@ -21,9 +21,10 @@
           if (!res.ok) throw new Error('HTTP ' + res.status);
           // Новые записи дописываются в конец, поэтому переворачиваем.
           const posts = (await res.json()).filter((p) => !p.isRemoved).reverse();
+          const total = posts.length;
           section.innerHTML = '';
-          posts.forEach((post) => {
-            const title = 'Post ' + post.num;
+          posts.forEach((post, i) => {
+            const title = 'Post ' + (total - i);
             // Пост без ссылки — не <a>, иначе пустой href ведёт на саму страницу.
             const card = document.createElement(post.url ? 'a' : 'div');
             card.className = post.url ? 'image-card' : 'image-card pending';

@@ -76,13 +76,11 @@ const posts = fs.existsSync(POSTS)
   : [];
 
 const known = new Map(posts.map((p) => [p.file, p]));
-let nextNum = posts.reduce((max, p) => Math.max(max, p.num || 0), 0) + 1;
 
 const added = [];
 for (const file of files) {
   if (known.has(file)) continue;
   const post = {
-    num: nextNum++,
     file,
     img: "public/thumbs/" + slugByFile.get(file) + ".jpg",
     url: "",
@@ -138,7 +136,8 @@ const videos = files.map((file) => {
   const st = fs.statSync(path.join(SRC, file));
   const p = known.get(file);
   return {
-    num: p.num,
+    // Номер поста = позиция записи в posts.json.
+    num: posts.indexOf(p) + 1,
     file,
     img: p.img,
     url: p.url || null,
@@ -165,5 +164,5 @@ console.log(
 if (orphans.length) {
   console.log("");
   console.log("В posts.json есть записи, которым больше нет файла в папке:");
-  orphans.forEach((p) => console.log("  #" + p.num + " " + p.file));
+  orphans.forEach((p) => console.log("  #" + (posts.indexOf(p) + 1) + " " + p.file));
 }

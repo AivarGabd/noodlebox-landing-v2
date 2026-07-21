@@ -50,13 +50,19 @@ body {
   background: #1a1a1a;
 }
 
+/* Не через opacity: полупрозрачная карточка пропускает фон сетки (#2a2a2a),
+   и строка становится серой вместо чёрной. Приглушаем только текст. */
 .image-card.pending {
   cursor: default;
-  opacity: 0.5;
 }
 
 .image-card.pending:hover {
   background: #000;
+}
+
+.image-card.pending .card-body h2,
+.image-card.pending .link-hint {
+  color: #6a6a6a;
 }
 
 .image-card img {
