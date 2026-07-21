@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ревизия видео</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #000;
+        color: #f2f2f2;
+        line-height: 1.5;
+      }
+
+      .container {
+        width: min(1100px, 94%);
+        margin: 0 auto;
+        padding: 20px 0 60px;
+      }
+
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+
+      .summary {
+        color: #b5b5b5;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .summary b {
+        color: #ff6b6b;
+      }
+
+      .controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .controls button {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        color: #f2f2f2;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .controls button[aria-pressed="true"] {
+        border-color: #f2f2f2;
+        background: #2a2a2a;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+      }
+
+      .item {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .item.lost {
+        border-color: #ff6b6b;
+      }
+
+      .item img {
+        width: 100%;
+        aspect-ratio: 9 / 16;
+        object-fit: cover;
+        display: block;
+        background: #111;
+      }
+
+      .meta {
+        padding: 8px 10px;
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .num {
+        font-weight: 700;
+      }
+
+      .file {
+        color: #7d7d7d;
+        font-size: 11px;
+        word-break: break-all;
+      }
+
+      .badge {
+        display: inline-block;
+        background: #ff6b6b;
+        color: #000;
+        font-weight: 700;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        align-self: flex-start;
+      }
+
+      .meta a {
+        color: #8ab4ff;
+        font-size: 11px;
+        word-break: break-all;
+      }
+
+      .status {
+        padding: 24px 0;
+        text-align: center;
+        color: #b5b5b5;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Ревизия видео</h1>
+      <p class="summary" id="summary">Загрузка…</p>
+
+      <div class="controls">
+        <button id="btn-all" aria-pressed="true">Все</button>
+        <button id="btn-lost" aria-pressed="false">Только без ссылки</button>
+      </div>
+
+      <section class="grid" id="grid"></section>
+    </main>
+
+    <script>
+      (async () => {
+        const grid = document.getElementById("grid");
+        const summary = document.getElementById("summary");
+        const btnAll = document.getElementById("btn-all");
+        const btnLost = document.getElementById("btn-lost");
+        let videos = [];
+        let onlyLost = false;
+
+        function render() {
+          const list = onlyLost ? videos.filter((v) => !v.url) : videos;
+          grid.innerHTML = "";
+
+          if (!list.length) {
+            const p = document.createElement("p");
+            p.className = "status";
+            p.textContent = "Ничего не найдено.";
+            grid.append(p);
+            return;
+          }
+
+          for (const v of list) {
+            const item = document.createElement("div");
+            item.className = v.url ? "item" : "item lost";
+
+            const img = document.createElement("img");
+            img.src = v.img;
+            img.alt = "Post " + v.num;
+            img.loading = "lazy";
+            item.append(img);
+
+            const meta = document.createElement("div");
+            meta.className = "meta";
+
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = "Post " + v.num;
+            meta.append(num);
+
+            const file = document.createElement("span");
+            file.className = "file";
+            file.textContent = v.file + " · " + v.sizeMb + " МБ · " + v.modified;
+            meta.append(file);
+
+            if (v.url) {
+              const a = document.createElement("a");
+              a.href = v.url;
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
+              a.textContent = v.url.replace("https://noodlebox.space/watch/", "");
+              meta.append(a);
+            } else {
+              const badge = document.createElement("span");
+              badge.className = "badge";
+              badge.textContent = "НЕТ ССЫЛКИ";
+              meta.append(badge);
+            }
+
+            item.append(meta);
+            grid.append(item);
+          }
+        }
+
+        try {
+          const res = await fetch("videos.json", { cache: "no-cache" });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          videos = (await res.json()).sort((a, b) => b.num - a.num);
+
+          const lost = videos.filter((v) => !v.url);
+          summary.innerHTML = "";
+          summary.append(
+            document.createTextNode("Видео в папке: " + videos.length + " · без ссылки: ")
+          );
+          const b = document.createElement("b");
+          b.textContent = String(lost.length);
+          summary.append(b);
+
+          render();
+        } catch (err) {
+          summary.textContent = "Не удалось загрузить videos.json";
+          console.error(err);
+        }
+
+        btnAll.addEventListener("click", () => {
+          onlyLost = false;
+          btnAll.setAttribute("aria-pressed", "true");
+          btnLost.setAttribute("aria-pressed", "false");
+          render();
+        });
+
+        btnLost.addEventListener("click", () => {
+          onlyLost = true;
+          btnAll.setAttribute("aria-pressed", "false");
+          btnLost.setAttribute("aria-pressed", "true");
+          render();
+        });
+      })();
+    </script>
+  </body>
+</html>

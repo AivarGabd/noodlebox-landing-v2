@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>full</title>
+    <meta name="description" content="full" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="cards" aria-label="Image cards">
+        <p class="cards-status">Loading…</p>
+      </section>
+    </main>
+    <script>
+      (async () => {
+        const section = document.querySelector('.cards');
+        try {
+          const res = await fetch('posts.json', { cache: 'no-cache' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          // Новые записи дописываются в конец, поэтому переворачиваем.
+          const posts = (await res.json()).filter((p) => !p.isRemoved).reverse();
+          section.innerHTML = '';
+          posts.forEach((post) => {
+            const title = 'Post ' + post.num;
+            // Пост без ссылки — не <a>, иначе пустой href ведёт на саму страницу.
+            const card = document.createElement(post.url ? 'a' : 'div');
+            card.className = post.url ? 'image-card' : 'image-card pending';
+            if (post.url) {
+              card.href = post.url;
+              card.target = '_blank';
+              card.rel = 'noopener noreferrer';
+            }
+
+            if (post.img) {
+              const img = document.createElement('img');
+              img.src = post.img;
+              img.alt = title;
+              img.loading = 'lazy';
+              card.append(img);
+            }
+
+            const body = document.createElement('div');
+            body.className = 'card-body';
+
+            const heading = document.createElement('h2');
+            heading.textContent = title;
+            body.append(heading);
+
+            card.append(body);
+
+            const hint = document.createElement('span');
+            hint.className = 'link-hint';
+            hint.setAttribute('aria-hidden', 'true');
+            hint.textContent = post.url ? '▶' : '—';
+            card.append(hint);
+            section.append(card);
+          });
+        } catch (err) {
+          section.innerHTML = '<p class="cards-status">Could not load posts.</p>';
+          console.error(err);
+        }
+      })();
+    </script>
+  </body>
+</html>
